@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Bayesian dot ML</title>
+    <link>http://bayesian.ml/</link>
+    <description>Recent content on Bayesian dot ML</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Thu, 31 Jan 2019 20:04:22 +0200</lastBuildDate>
+    
+	<atom:link href="http://bayesian.ml/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Capillary Hackathon Post-Mortem</title>
+      <link>http://bayesian.ml/posts/capillary/</link>
+      <pubDate>Thu, 31 Jan 2019 20:04:22 +0200</pubDate>
+      
+      <guid>http://bayesian.ml/posts/capillary/</guid>
+      <description>#How to rank 24% at an AnalyticsVidhya competition with 24 lines of code and no statistics or machine learning whatsoever
+This blogpost is about my approach at the AnalyticsVidhya competition of 20/01/2019. The goal of the competition was to recommend products to users of an online shop. Since I ended up taking the wrong approach of predicting the next product based on features of the previous, none of statistical my models had predictive power whatsoever, this blogpost is clickbait about my baseline.</description>
+    </item>
+    
+  </channel>
+</rss>
