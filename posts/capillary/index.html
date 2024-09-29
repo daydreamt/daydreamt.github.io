@@ -7,23 +7,28 @@
 <meta property="og:description" content="#How to rank 24% at an AnalyticsVidhya competition with 24 lines of code and no statistics or machine learning whatsoever
 This blogpost is about my approach at the AnalyticsVidhya competition of 20/01/2019. The goal of the competition was to recommend products to users of an online shop. Since I ended up taking the wrong approach of predicting the next product based on features of the previous, none of statistical my models had predictive power whatsoever, this blogpost is clickbait about my baseline." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="http://bayesian.ml/posts/capillary/" />
-<meta property="article:published_time" content="2019-01-31T20:04:22&#43;02:00"/>
-<meta property="article:modified_time" content="2019-01-31T20:04:22&#43;02:00"/>
+<meta property="og:url" content="http://bayesian.ml/posts/capillary/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2019-01-31T20:04:22+02:00" />
+<meta property="article:modified_time" content="2019-01-31T20:04:22+02:00" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Capillary Hackathon Post-Mortem"/>
 <meta name="twitter:description" content="#How to rank 24% at an AnalyticsVidhya competition with 24 lines of code and no statistics or machine learning whatsoever
 This blogpost is about my approach at the AnalyticsVidhya competition of 20/01/2019. The goal of the competition was to recommend products to users of an online shop. Since I ended up taking the wrong approach of predicting the next product based on features of the previous, none of statistical my models had predictive power whatsoever, this blogpost is clickbait about my baseline."/>
-<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:500,100,300" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
 
-	<link rel="stylesheet" type="text/css" media="screen" href="/css/normalize.css" />
-	<link rel="stylesheet" type="text/css" media="screen" href="/css/main.css" /><script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script><script src="/js/main.js"></script>
+	<link rel="stylesheet" type="text/css" media="screen" href="http://bayesian.ml/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="http://bayesian.ml/css/main.css" />
+
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+	<script src="http://bayesian.ml/js/main.js"></script>
 </head>
 
 <body>
 	<div class="container wrapper post">
 		<div class="header">
-	<h1 class="site-title">Bayesian dot ML</h1>
+	<base href="http://bayesian.ml/">
+	<h1 class="site-title"><a href="http://bayesian.ml/">Bayesian dot ML</a></h1>
 	<div class="site-description"><h2>My personal blog, on the best statistical methodology and all things ML</h2><nav class="nav social">
 			<ul class="flat"><a href="https://github.com/daydreamt" title="Github"><i data-feather="github"></i></a><a href="https://www.linkedin.com/in/nikolaos-moraitakis/" title="LinkedIn"><i data-feather="linkedin"></i></a></ul>
 		</nav>
@@ -59,38 +64,27 @@ This blogpost is about my approach at the AnalyticsVidhya competition of 20/01/2
 		</div>
 
 		<div class="markdown">
-			
-
-<p>#How to rank 24% at an AnalyticsVidhya competition with 24 lines of code and no statistics or machine learning whatsoever</p>
-
+			<p>#How to rank 24% at an AnalyticsVidhya competition with 24 lines of code and no statistics or machine learning whatsoever</p>
 <p>This blogpost is about my approach at the <a href="https://datahack.analyticsvidhya.com/contest/capillary-machine-learning-hackathon/">AnalyticsVidhya competition of 20/01/2019.</a>
-<img src="/top_25_pct2.png" alt="Picture of the leaderboard" /></p>
-
+<img src="/top_25_pct2.png" alt="Picture of the leaderboard"></p>
 <p>The goal of the competition was to recommend products to users of an online shop.
 Since I ended up taking the wrong approach of predicting the next product based on features of the previous, none of statistical my models had predictive power whatsoever, this blogpost is clickbait about my baseline.</p>
-
-<h1 id="the-approach-tl-dr">The approach (TL;DR):</h1>
-
+<h1 id="the-approach-tldr">The approach (TL;DR):</h1>
 <p>I treated the purchases of every user as a timeseries.
-Then, for every product, I computed how often another product was bought at the next point in time, <a href="https://en.wikipedia.org/wiki/N-gram">a bit like a bi-gram.</a> Other people did worse, and I ended up <sup>69</sup>&frasl;<sub>290</sub>, or top 24%.</p>
-
+Then, for every product, I computed how often another product was bought at the next point in time, <a href="https://en.wikipedia.org/wiki/N-gram">a bit like a bi-gram.</a> Other people did worse, and I ended up 69/290, or top 24%.</p>
 <h1 id="the-data">The data</h1>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">import</span> pandas <span style="color:#00f">as</span> pd
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">import</span> pandas <span style="color:#00f">as</span> pd
 <span style="color:#00f">import</span> numpy <span style="color:#00f">as</span> np
 user_df = pd.read_csv(<span style="color:#a31515">&#34;train- Capillary 4/train.csv&#34;</span>)
-<span style="color:#00f">print</span>(user_df.head())
+print(user_df.head())
 product_df = pd.read_csv(<span style="color:#a31515">&#34;train- Capillary 4/product_attributes.csv&#34;</span>)
-<span style="color:#00f">print</span>(product_df.head())</code></pre></div>
-<p>Listing 1: The product attributes were a waste of time.</p>
-
-<p><img src="/unpopular.png" alt="Some not popular dresses in this store" /></p>
-
-<p><img src="/popular.png" alt="Some popular dresses in this store" /></p>
-
+print(product_df.head())
+</code></pre></div><p>Listing 1: The product attributes were a waste of time.</p>
+<p><img src="/unpopular.png" alt="Some not popular dresses in this store"></p>
+<p><img src="/popular.png" alt="Some popular dresses in this store"></p>
 <p>Very colourful.One of these rows represents some top-sellers, whereas the other represents items only being bought once. Can you distinguish among them? (EDIT: In hindsight, they do seem very different, <a href="https://drive.google.com/open?id=1T2dGWdyCy7gCm5bPbKeZzpmBhKOdlLdx">and the people who used visual similarities did quite alright</a> )</p>
-
 <h1 id="the-24-lines-of-code">The 24 lines of code:</h1>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> collections <span style="color:#00f">import</span> Counter
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">from</span> collections <span style="color:#00f">import</span> Counter
 <span style="color:#00f">import</span> csv
 
 test_df_writing = pd.read_csv(<span style="color:#a31515">&#34;train- Capillary 4/test_nFNPSyV.csv&#34;</span>)
@@ -106,7 +100,7 @@ next_dict = {}
 <span style="color:#00f">for</span> x, y <span style="color:#00f">in</span> xy:
     <span style="color:#00f">if</span> x <span style="color:#00f">not</span> <span style="color:#00f">in</span> next_dict: next_dict[x] = Counter()
     next_dict[x][y] += 1
-recommended_top_10 = count_of_products.sort_values(by=<span style="color:#a31515">&#34;count&#34;</span>, ascending=False).head(n=10).index.values.tolist()
+recommended_top_10 = count_of_products.sort_values(by=<span style="color:#a31515">&#34;count&#34;</span>, ascending=<span style="color:#00f">False</span>).head(n=10).index.values.tolist()
 recommended_top_10
 <span style="color:#00f">def</span> recommend(userid):
     last_product_id = last_product_dict[userid]
@@ -115,16 +109,13 @@ recommended_top_10
     recommended = [x[0] <span style="color:#00f">for</span> x <span style="color:#00f">in</span> next_dict[last_product_id].most_common(10) <span style="color:#00f">if</span> ((float(x[1])/ recommended_total) &gt;= 0.05)]
     <span style="color:#00f">if</span> len(recommended) &lt; 2:
         recommended = [x[0] <span style="color:#00f">for</span> x <span style="color:#00f">in</span> next_dict[last_product_id].most_common(2)]
-    <span style="color:#00f">return</span> recommended</code></pre></div>
-<h1 id="analysis">Analysis:</h1>
-
+    <span style="color:#00f">return</span> recommended
+</code></pre></div><h1 id="analysis">Analysis:</h1>
 <p>Wow, look at that, exactly 24 lines of code!
 Where do the numbers 0.05 and 2 most common come from? Not a cross-validation set. Better luck next time!</p>
-
 <h1 id="for-completeness-also-the-code-to-write-the-csv">For completeness, also the code to write the .csv</h1>
-
 <p>(That was given as sample code).</p>
-<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fields=[<span style="color:#a31515">&#39;UserId&#39;</span>,<span style="color:#a31515">&#39;product_list&#39;</span>]
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">fields=[<span style="color:#a31515">&#39;UserId&#39;</span>,<span style="color:#a31515">&#39;product_list&#39;</span>]
 filename = <span style="color:#a31515">&#39;top_10_by_previous.csv&#39;</span>
 <span style="color:#00f">with</span> open(filename, <span style="color:#a31515">&#39;w&#39;</span> ) <span style="color:#00f">as</span> f:
     writer = csv.writer(f)
@@ -137,13 +128,34 @@ filename = <span style="color:#a31515">&#39;top_10_by_previous.csv&#39;</span>
         recommended = recommend(user)
         results.append(user)
         results.append(recommended)
-        writer.writerow(results)        </code></pre></div>
-		</div></div>
+        writer.writerow(results)        
+</code></pre></div>
+		</div>
+
+		<div class="post-tags">
+			
+				
+					<nav class="nav tags">
+							<ul class="flat">
+								
+								<li><a href="/tags/python">Python</a></li>
+								
+								<li><a href="/tags/analyticsvidhya">AnalyticsVidhya</a></li>
+								
+								<li><a href="/tags/hackathon">hackathon</a></li>
+								
+							</ul>
+					</nav>
+				
+			
+		</div>
+		</div>
 	<div class="footer wrapper">
 	<nav class="nav">
-		<div><a href="https://github.com/vividvilla/ezhil">Ezhil theme</a> | Built with <a href="https://gohugo.io">Hugo</a></div>
+		<div> <a href="https://github.com/vividvilla/ezhil">Ezhil theme</a> | Built with <a href="https://gohugo.io">Hugo</a></div>
 	</nav>
 </div>
+
 
 
 <script type="application/javascript">
@@ -156,6 +168,7 @@ if (!doNotTrack) {
 }
 </script>
 <script async src='https://www.google-analytics.com/analytics.js'></script>
+
 <script>feather.replace()</script>
 </body>
 </html>

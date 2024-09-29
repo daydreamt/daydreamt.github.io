@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>30 lines of RAG without any chains - Bayesian dot ML</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta property="og:title" content="30 lines of RAG without any chains" />
+<meta property="og:description" content="After being puzzled for a while, I have come to realize that the main appeal of Langchain&rsquo;s and similar frameworks&#39;, is the ease to get started by copy pasting working code. This is not necessary! Here are ~30 lines of workable RAG code.
+Create the environment with miniconda
+conda create -n faissenv -c pytorch -c nvidia faiss-gpu=1.8.0 conda activate faissenv pip install transformers datasets tqdm sentence-transformers accelerate First we get our data and index it:" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://bayesian.ml/posts/rag_in_30/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2024-09-29T21:46:20+02:00" />
+<meta property="article:modified_time" content="2024-09-29T21:46:20+02:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="30 lines of RAG without any chains"/>
+<meta name="twitter:description" content="After being puzzled for a while, I have come to realize that the main appeal of Langchain&rsquo;s and similar frameworks&#39;, is the ease to get started by copy pasting working code. This is not necessary! Here are ~30 lines of workable RAG code.
+Create the environment with miniconda
+conda create -n faissenv -c pytorch -c nvidia faiss-gpu=1.8.0 conda activate faissenv pip install transformers datasets tqdm sentence-transformers accelerate First we get our data and index it:"/>
+<link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel="stylesheet">
+
+	<link rel="stylesheet" type="text/css" media="screen" href="http://bayesian.ml/css/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="http://bayesian.ml/css/main.css" />
+
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+	<script src="http://bayesian.ml/js/main.js"></script>
+</head>
+
+<body>
+	<div class="container wrapper post">
+		<div class="header">
+	<base href="http://bayesian.ml/">
+	<h1 class="site-title"><a href="http://bayesian.ml/">Bayesian dot ML</a></h1>
+	<div class="site-description"><h2>My personal blog, on the best statistical methodology and all things ML</h2><nav class="nav social">
+			<ul class="flat"><a href="https://github.com/daydreamt" title="Github"><i data-feather="github"></i></a><a href="https://www.linkedin.com/in/nikolaos-moraitakis/" title="LinkedIn"><i data-feather="linkedin"></i></a></ul>
+		</nav>
+	</div>
+
+	<nav class="nav">
+		<ul class="flat">
+			
+			<li>
+				<a href="/">Home</a>
+			</li>
+			
+			<li>
+				<a href="/posts">All posts</a>
+			</li>
+			
+			<li>
+				<a href="/about">About</a>
+			</li>
+			
+			<li>
+				<a href="/tags">Tags</a>
+			</li>
+			
+		</ul>
+	</nav>
+</div>
+
+
+		<div class="post-header">
+			<h1 class="title">30 lines of RAG without any chains</h1>
+			<div class="meta">Posted at &mdash; Sep 29, 2024</div>
+		</div>
+
+		<div class="markdown">
+			<p>After being puzzled for a while, I have come to realize that the main appeal of Langchain&rsquo;s and similar frameworks', is the ease to get started by copy pasting working code. This is not necessary! Here are ~30 lines of workable <a href="https://en.wikipedia.org/wiki/Retrieval-augmented_generation">RAG</a> code.</p>
+<p>Create the environment with <a href="https://docs.anaconda.com/miniconda/">miniconda</a></p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">conda create -n faissenv  -c pytorch -c nvidia faiss-gpu=1.8.0
+conda activate faissenv
+pip install transformers datasets tqdm sentence-transformers accelerate
+</code></pre></div><p>First we get our data and index it:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">import</span> torch
+<span style="color:#00f">from</span> sentence_transformers <span style="color:#00f">import</span> SentenceTransformer
+<span style="color:#00f">from</span> transformers <span style="color:#00f">import</span> AutoTokenizer, AutoModel, pipeline
+<span style="color:#00f">import</span> faiss
+<span style="color:#00f">from</span> datasets <span style="color:#00f">import</span> load_dataset
+<span style="color:#00f">from</span> tqdm <span style="color:#00f">import</span> tqdm
+<span style="color:#00f">import</span> numpy <span style="color:#00f">as</span> np
+
+N_DATA=10_000
+dataset = load_dataset(<span style="color:#a31515">&#34;ysharma/short_jokes&#34;</span>)[<span style="color:#a31515">&#39;train&#39;</span>][<span style="color:#a31515">&#39;Joke&#39;</span>][:N_DATA]  <span style="color:#008000"># a list of strings</span>
+EMBEDDING_MODEL = <span style="color:#a31515">&#34;Snowflake/snowflake-arctic-embed-xs&#34;</span>
+
+<span style="color:#008000"># check your embedding model&#39;s documentation on how to use https://huggingface.co/Snowflake/snowflake-arctic-embed-xs </span>
+device = <span style="color:#a31515">&#39;cuda&#39;</span> <span style="color:#00f">if</span> torch.cuda.is_available() <span style="color:#00f">else</span> <span style="color:#a31515">&#39;cpu&#39;</span>
+model = SentenceTransformer(EMBEDDING_MODEL).to(device)
+
+<span style="color:#00f">def</span> get_embeddings(texts):
+    embeddings = model.encode(texts, device=device)
+    faiss.normalize_L2(embeddings)
+    <span style="color:#00f">return</span> embeddings
+
+embeddings = get_embeddings(dataset)
+
+dimension = embeddings[0].shape[0]
+index = faiss.IndexFlatL2(dimension)
+index.add(torch.tensor(embeddings).float().numpy())
+</code></pre></div><p>Then we can retrieve similar data for a query, in this case to inspire the model with similar jokes:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#00f">def</span> retrieve_similar(query, k=3):
+    query_vector = get_embeddings([query])[0]
+    faiss.normalize_L2(query_vector.reshape(1, -1))
+    similarities, indices = index.search(query_vector.reshape(1, -1), k)
+    <span style="color:#00f">return</span> [dataset[idx] <span style="color:#00f">for</span> idx <span style="color:#00f">in</span> indices[0]]
+<span style="color:#008000"># retrieve_similar(&#34;A man walks into a bar&#34;)</span>
+<span style="color:#008000"># [&#39;A man walks into a bar... Just kidding&#39;, &#39;A man walks into a bar. Ouch.&#39;, &#39;A man and a woman walk into a bar...&#39;]</span>
+
+</code></pre></div><p>Finally we can format this into a prompt and pass it to the LLM, to generate with it what it must (in this case come up with a new joke):</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#008000"># Again adapt according to LLM you use, see e.g. https://www.llama.com/docs/model-cards-and-prompt-formats/llama3_2/ and https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct</span>
+llm_id = <span style="color:#a31515">&#34;meta-llama/Llama-3.2-1B-Instruct&#34;</span>
+pipe = pipeline(
+    <span style="color:#a31515">&#34;text-generation&#34;</span>, 
+    model=llm_id, 
+    torch_dtype=torch.bfloat16, 
+    device_map=<span style="color:#a31515">&#34;auto&#34;</span>,
+    max_new_tokens=1000,
+)
+PROMPT_TEMPLATE = <span style="color:#a31515">&#34;&#34;&#34;&lt;|begin_of_text|&gt;&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;
+</span><span style="color:#a31515">You are a joke writing assistant, helping the user come up with new jokes based on a premise and similar jokes. Avoid cliches and try to be novel, yet funny. Stop after the joke. &lt;|eot_id|&gt;&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;
+</span><span style="color:#a31515">
+</span><span style="color:#a31515">Similar jokes: </span><span style="color:#a31515">{context}</span><span style="color:#a31515">
+</span><span style="color:#a31515">And premise: </span><span style="color:#a31515">{query}</span><span style="color:#a31515">, a new joke would be&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;&#34;&#34;&#34;</span>
+<span style="color:#00f">def</span> generate(query):
+    <span style="color:#00f">return</span> pipe(PROMPT_TEMPLATE.format(context=<span style="color:#a31515">&#34;</span><span style="color:#a31515">\n</span><span style="color:#a31515">&#34;</span>.join(retrieve_similar(query)), query=query))
+
+generate(<span style="color:#a31515">&#34;A man walks into a bar&#34;</span>)[<span style="color:#a31515">&#39;generated_text&#39;</span>]
+<span style="color:#008000"># &#39;&lt;|begin_of_text|&gt;&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;\nYou are a joke writing assistant, helping the user come up with new jokes based on a premise and similar jokes. Avoid cliches and try to be novel, yet funny. Stop after the joke. &lt;|eot_id|&gt;&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;\n\nSimilar jokes: A man walks into a bar... Just kidding\nA man walks into a bar. Ouch.\nA man and a woman walk into a bar...\nAnd premise: A man walks into a bar, a new joke would be&lt;|eot_id|&gt;&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;\nA man walks into a bar and orders a beer. As he\&#39;s sipping his drink, he hears a voice say, &#34;Nice tie!&#34; He looks around, but there\&#39;s nobody nearby who could have said it. A few minutes later, he hears, &#34;Beautiful shirt!&#34; Again, he looks around, but he can\&#39;t find anyone who might have spoken. A few more minutes pass, and he hears, &#34;Great haircut!&#34; This time, he decides to investigate. He asks the bartender, &#34;Did you hear those voices?&#34;\n\nThe bartender replies, &#34;Oh, that\&#39;s just the peanuts. They\&#39;re complimentary.&#34;&#39;</span>
+</code></pre></div><p>Not a bad joke!</p>
+<h3 id="notes-and-extensions">Notes and extensions</h3>
+<ul>
+<li>Adapt the embedding model and LLM according to your use case - a small, English only model is enough for our joke dataset.</li>
+<li>You can probably use exact neighbours for a million datapoints or so (O(N*D) query time), but you can scale to many tens of millions more by just changing the Faiss index to use approximate nearest neighbors. <a href="https://speakerdeck.com/matsui_528/cvpr20-tutorial-billion-scale-approximate-nearest-neighbor-search">This tutorial</a> is the best on approximate nearest neighbour search I have found and I highly recommend it. Also see the <a href="https://www.pinecone.io/learn/series/faiss/faiss-tutorial/">pinecone Faiss tutorials</a>.</li>
+<li>Or feel free to switch out to another vector database.</li>
+</ul>
+
+		</div>
+
+		<div class="post-tags">
+			
+				
+					<nav class="nav tags">
+							<ul class="flat">
+								
+								<li><a href="/tags/retrieval-augmented-generation">Retrieval Augmented Generation</a></li>
+								
+								<li><a href="/tags/rag">RAG</a></li>
+								
+								<li><a href="/tags/python">Python</a></li>
+								
+								<li><a href="/tags/large-language-models">Large Language Models</a></li>
+								
+							</ul>
+					</nav>
+				
+			
+		</div>
+		</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div> <a href="https://github.com/vividvilla/ezhil">Ezhil theme</a> | Built with <a href="https://gohugo.io">Hugo</a></div>
+	</nav>
+</div>
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-139890222', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+<script>feather.replace()</script>
+</body>
+</html>

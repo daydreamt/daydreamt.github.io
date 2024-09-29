@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Bayesian dot ML</title>
@@ -6,10 +6,17 @@
     <description>Recent content on Bayesian dot ML</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 31 Jan 2019 20:04:22 +0200</lastBuildDate>
-    
-	<atom:link href="http://bayesian.ml/index.xml" rel="self" type="application/rss+xml" />
-    
+    <lastBuildDate>Sun, 29 Sep 2024 21:46:20 +0200</lastBuildDate><atom:link href="http://bayesian.ml/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>30 lines of RAG without any chains</title>
+      <link>http://bayesian.ml/posts/rag_in_30/</link>
+      <pubDate>Sun, 29 Sep 2024 21:46:20 +0200</pubDate>
+      
+      <guid>http://bayesian.ml/posts/rag_in_30/</guid>
+      <description>After being puzzled for a while, I have come to realize that the main appeal of Langchain&amp;rsquo;s and similar frameworks&#39;, is the ease to get started by copy pasting working code. This is not necessary! Here are ~30 lines of workable RAG code.
+Create the environment with miniconda
+conda create -n faissenv -c pytorch -c nvidia faiss-gpu=1.8.0 conda activate faissenv pip install transformers datasets tqdm sentence-transformers accelerate First we get our data and index it:</description>
+    </item>
     
     <item>
       <title>Capillary Hackathon Post-Mortem</title>
